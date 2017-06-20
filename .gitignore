@@ -1,0 +1,8 @@
+/target/
+/vacomall-workspace/
+/velocity.log
+/.settings
+/.idea
+/.classpath
+/.project
+/*.iml

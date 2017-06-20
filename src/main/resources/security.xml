@@ -1,0 +1,106 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+  xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security.xsd">
+    
+    <beans:description>SpringSecurity安全配置</beans:description>
+     <!-- 配置不过滤的资源（静态资源及登录相关） --> 
+    <!-- 是忽略拦截某些资源的意思，主要是针对静态资源 --> 
+    <http pattern="/**/*.css" security="none"/>  
+    <http pattern="/**/*.jpg" security="none"/>  
+    <http pattern="/**/*.jpeg" security="none"/>  
+    <http pattern="/**/*.gif" security="none"/>  
+    <http pattern="/**/*.png" security="none"/>  
+    <http pattern="/js/*.js" security="none"/>  
+      
+    <http pattern="/login.jsp" security="none"/><!-- 不过滤登录 -->  
+    <http pattern="/getCode" security="none" /><!-- 不过滤验证码 -->  
+    <http pattern="/test/**" security="none"/><!-- 不过滤测试内容 -->
+    
+    <http auto-config='true'>
+    		<intercept-url pattern="/secure/**" access="ROLE_USER" requires-channel="https"/>
+    <!-- 进入请求的网址匹配 还可以使用正则表达式 access属性定义与给定模式匹配的请求的访问要求 -->
+	 		<intercept-url pattern="/login.jsp" access="IS_AUTHENTICATED_ANONYMOUSLY" requires-channel="any" />
+       		<intercept-url pattern="/admin.jsp" access="ROLE_ADMIN" requires-channel="any" />
+	  		<intercept-url pattern="/**" access="ROLE_USER" requires-channel="any" />
+	  		<!-- 三个属性依次未:  自定义登录页面  登录失败后跳转的页面  登录成功后跳转的页面-->
+	  		<form-login    login-page="/login.jsp" 
+	  			    	   authentication-failure-url = "/login.jsp?error=true"
+	   					   default-target-url="/index.jsp"
+	   		/>
+	   		<!-- 尝试访问没有权限的页面时跳转 j_spring_security_logout -->
+	   		<access-denied-handler error-page="/403.jsp"/>
+	   		<!-- 登出 -->
+	  		<logout logout-success-url="/login.jsp"/>
+	  		<!-- 这将阻止用户多次登录 - 第二次登录将导致第一个无效。通常，您更希望防止第二次登录，在这种情况下您可以使用  -->
+	  		<session-management>
+	  			<concurrency-control max-sessions = "1" error-if-maximum-exceeded="true"/>
+	  		</session-management>
+	  		
+	  		<!-- 增加一个filter,不能Acegi一样修改默认 -->
+	  		<!-- 这个filter位于FILTER_SECURITY_INTERCEPTOR 之前 -->
+	  		<custom-filter ref="myFilter" before="FILTER_SECURITY_INTERCEPTOR"/>
+	</http>
+	<!-- 一个自定义的filter必须包含:
+				authenticationManager
+				accessDecisionManager
+				securityMetadataSource
+	 -->
+	<beans:bean id="myFilter" class="pub.security.interceptor.MyFilterSecurityInterceptor">
+			<beans:property name="authenticationManager" ref="authenticationManager" />
+			<beans:property name="accessDecisionManager" ref="myaccessDecisionManagerBean"/>
+			<beans:property name="securityMetadataSource" ref="mysecurityMetadataSource"/>
+	</beans:bean>
+	
+	
+	<!-- 验证配置 认证管理,实现用户认证的入口 主要实现UserDetailService接口即可 -->
+	<authentication-manager alias="authenticationManager">
+        <authentication-provider user-service-ref="userDetailService">
+			<!-- <user-service> 
+				<user name="admin" password="admin" authorities="ROLE_USER, ROLE_ADMIN" />
+				<user name="user" password="user" authorities="ROLE_USER" />
+			</user-service> -->
+        </authentication-provider>
+    </authentication-manager>
+	
+	<!-- 项目实现的用户查询,经用户信息查询出来 -->
+	<beans:bean id="userDetailService" class="pub.security.support.MyUserDetailService"/>
+	
+	<!-- 访问决策器 决定让某个用户具有角色 有足够权限去访问某个资源-->
+	<beans:bean id="myAccessDecisionManagerBean" class="pub.security.support.MyAccessDecisionManager"/>
+	
+	<!-- 资源源数据定义 将所有的资源和权限对应关系建立起来,及定义某一资源可以被哪些角色访问 -->
+	<beans:bean id="mysecurityMetadataSource" class="pub.security.support.MyInvocationSecurityMetadataSourceService"/>
+	
+	<!-- 国际化  如果不加载自己的国际化文件，去加载 Security 内部的国际化文件classpath:org/springframework/security/messages_zh_CN   -->  
+     <beans:bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">  
+      	<beans:property name="basename" value="classpath:org/springframework/security/messages_zh_CN"/>  
+    </beans:bean>  
+</beans:beans>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
